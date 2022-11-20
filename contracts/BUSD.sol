@@ -2,11 +2,12 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./IBEP20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract BUSD is Context, IBEP20, Ownable {
   using SafeMath for uint256;
