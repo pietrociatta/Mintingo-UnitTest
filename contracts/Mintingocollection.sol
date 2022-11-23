@@ -9,9 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
-
-
-contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
+contract MintingoCollection is  ERC721Enumerable, Ownable, ReentrancyGuard {
     using Strings for uint256;
     using SafeMath for uint256;
 
@@ -49,22 +47,6 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
     uint256 total_claimed;
     }   
 
-   
-
-// Make a require to check if the user is in the winning array
-    modifier onlyWinner() {
-        if (revealed == true) {
-            bool legit = false;
-            for (uint256 i = 0; i < winners.length; i++) {
-                if (balanceOf(msg.sender) == winners[i]) {
-                    legit = true;
-                    break;
-                }
-            }
-            require(legit == true, "NOT_AUTHORIZED");
-            _;
-        }
-    }
 
 // Modifier per Master Contract
     modifier onlyMaster() {
@@ -77,8 +59,9 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
         string memory _symbol, uint256[] memory totalClaimable, uint256[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _master) ERC721(_name, _symbol) Ownable() {
         require(tiers.length == coins.length && coins.length == amounts.length && coins.length == totalClaimable.length, 'INVALID_DATA');
          for(uint256 i=0; i < tiers.length; i++){
-            if (i== 0 ) {
-                rewards.push(RewardInfo(address(0),0,0,0));
+            if (i == 0 ) {
+            rewards.push(RewardInfo(address(0),0,totalClaimable[i],0));
+            continue;
             }
             rewards.push(RewardInfo(coins[i], amounts[i], totalClaimable[i], 0));
         }
@@ -109,15 +92,16 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
 //     }
 
 // Funzione get ticket 
-    function getTicket() public view returns (address[] memory, address[] memory, uint256[] memory)  {
-        return (price_info.coin_to_pay, price_info.nfts, price_info.price_to_pay);
-    }    
-
+    // function getTicket() public view returns (address[] memory, address[] memory, uint256[] memory)  {
+    //     return (price_info.coin_to_pay, price_info.nfts, price_info.price_to_pay);
+    // }    
+ 
 // Funzione per sapere se utente può claimare premio
-    function  claim(uint256 token_id) public onlyWinner() {
-        // master puo fare claim dopo la scadenza
-        require (expiration > block.timestamp, 'EXPIRED');
-        require(balanceOf(msg.sender) > 0, 'NOT_HOLDER');
+    function  claim(uint256 token_id) public {
+        require(!paused, "CONTRACT_PAUSED");
+        require(revealed == true, 'NOT_REVEALED');
+        require(ownerOf(token_id) == msg.sender, 'NOT_OWNER');
+        require (expiration > block.timestamp, 'TICKET_EXPIRED');
         require(winners.length > 0, 'NO_WINNERS');
         bool legit = false;
         for(uint i=0;i< winners.length; i++){
@@ -126,18 +110,15 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
                 break;
             }
         }
-        for(uint i=0; i < price_info.nfts.length; i++){
-            require(IERC721(price_info.nfts[i]).balanceOf(msg.sender) > 0, 'NOT_TICKET_HOLDER');
-        }
-        require(legit == true, 'NOT_AUTHORIZED');
-        // Transfer the reward to the winner
+        require(legit == true, 'NOT_WINNER');
+       
         RewardInfo memory reward = reward_by_token[token_id];
         require(reward.total_claimed < reward.total_claimable, 'NO_MORE_CLAIMS');
         reward.total_claimed += 1;
-        // Transfer the reward to the winner from the contract
+        reward_by_token[token_id] = reward;
         IERC20(reward.coin).transfer(msg.sender, reward.amount);
-    // Transfer the user ticket to the master contract
         IERC721(this).transferFrom(msg.sender, master, token_id);
+        
     }
 
 // Funzione per fare il reveal dei premi
@@ -154,6 +135,7 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
         // rest of stuff here
         setBaseURI(revealed_uri);    
         revealed = true;
+       
     }
 
 
@@ -163,7 +145,7 @@ contract MintingoCollection is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory)
     {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token"
+        require(_exists(tokenId), "TOKEN_NO_EXIST"
         );
         if (revealed == false) {
             return notRevealedUri;

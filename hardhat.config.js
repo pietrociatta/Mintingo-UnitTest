@@ -1,4 +1,5 @@
 require('@nomicfoundation/hardhat-toolbox');
+require('hardhat-contract-sizer');
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -7,7 +8,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 2000,
+        runs: 100,
         details: {
           yul: true,
           yulDetails: {
@@ -17,5 +18,12 @@ module.exports = {
         },
       },
     },
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: [],
   },
 };

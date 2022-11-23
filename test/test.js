@@ -23,15 +23,16 @@ let childContract;
 // Variables for child contract constructor
 let _name = 'Child Contract';
 let _symbol = 'CHILD';
-let _totalClaimable = [100, 200, 300, 400];
-let _tiers = [1, 2, 3, 4];
+let _totalClaimable = [300, 100, 200, 300, 400];
+let _tiers = [0, 1, 2, 3, 4];
 let _coins = [
+  '0x0000000000000000000000000000000000000000',
   '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
   '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
   '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
   '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
 ];
-let _amounts = [1000, 2000, 3000, 4000];
+let _amounts = [0, 10, 10, 10, 10];
 let _coin_to_pay = [
   '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
   '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e',
@@ -203,7 +204,7 @@ describe('USDC Contract', function () {
     expect(await usdcContract.name()).to.equal('USDC Token');
   });
 
-  it('Should Transfer 2000 BUSD to addr1', async function () {
+  it('Should Transfer 2000 USDC to addr1', async function () {
     await usdcContract.transfer(addr1Address, 2000);
 
     // ✅✅✅✅✅✅✅
@@ -230,16 +231,16 @@ describe('Main Contract', function () {
     // ✅✅✅✅✅✅✅
     expect(await childContract.symbol()).to.equal(_symbol);
     // ✅✅✅✅✅✅✅
-    for (let i = 0; i < _coins.length + 1; i++) {
+    for (let i = 0; i < _coins.length; i++) {
       const value = await childContract.rewards(i);
       if (i == 0) {
         expect(value.coin).to.equal(
           '0x0000000000000000000000000000000000000000'
         );
       } else {
-        expect(value.coin).to.equal(_coins[i - 1]);
-        expect(value.amount).to.equal(_amounts[i - 1]);
-        expect(value.total_claimable).to.equal(_totalClaimable[i - 1]);
+        expect(value.coin).to.equal(_coins[i]);
+        expect(value.amount).to.equal(_amounts[i]);
+        expect(value.total_claimable).to.equal(_totalClaimable[i]);
         expect(value.total_claimed).to.equal(0);
       }
     }
@@ -289,6 +290,7 @@ describe('Mint Master -> Child', function () {
     expect(await childContract.balanceOf(addr1Address)).to.equal(4);
     expect(await childContract.totalSupply()).to.equal(4);
     expect(await busdContract.balanceOf(childContract.address)).to.equal(120);
+    expect(await busdContract.balanceOf(addr1Address)).to.equal(880);
   });
 
   it('Should mint 2 NFT to addr1 paying with USDC: buy_ticket', async function () {
@@ -304,5 +306,35 @@ describe('Mint Master -> Child', function () {
     expect(await childContract.balanceOf(addr1Address)).to.equal(6);
     expect(await childContract.totalSupply()).to.equal(6);
     expect(await usdcContract.balanceOf(childContract.address)).to.equal(80);
+    expect(await usdcContract.balanceOf(addr1Address)).to.equal(1920);
+  });
+
+  it('Should reveal the NFTs: reveal', async function () {
+    await masterContract.reveal_by_id(
+      childContract.address,
+      [1, 2, 3, 4],
+      [1, 2, 3, 4],
+      'ciao'
+    );
+
+    const rewards = await childContract.reward_by_token(0);
+    const rewards1 = await childContract.reward_by_token(1);
+    const rewards2 = await childContract.reward_by_token(2);
+    const rewards3 = await childContract.reward_by_token(3);
+
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.revealed()).to.equal(true);
+  });
+
+  it('Should claim the rewards: claim', async function () {
+    await childContract
+      .connect(addr1Signer)
+      .setApprovalForAll(childContract.address, true);
+    await childContract.connect(addr1Signer).claim(2);
+
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.balanceOf(addr1Address)).to.equal(5);
+    expect(await busdContract.balanceOf(addr1Address)).to.equal(890);
+    expect(await busdContract.balanceOf(childContract.address)).to.equal(110);
   });
 });
