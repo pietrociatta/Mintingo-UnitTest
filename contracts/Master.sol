@@ -41,7 +41,7 @@ contract Master is Ownable {
         uint256[] memory tiers,
         string memory revealed_uri
     ) public {
-      
+        console.log("trigger");
         winners_by_collection[collection_id] = winners;
         IMintingoCollection(collection_id).reveal(winners, tiers, revealed_uri);
     }
@@ -56,7 +56,7 @@ contract Master is Ownable {
     function  buy_ticket(uint256 collection_id, address coin, uint256 _mintAmount) public {
         /// TODO: if users lose X times in a row, then he has the right to get a free ticket.
         require(collections[collection_id] != address(0), 'COLLECTION_DNE');
-       
+      
         address collection_address = collections[collection_id];
  
         IMintingoCollection(collection_address).mint(_mintAmount, coin, msg.sender);
