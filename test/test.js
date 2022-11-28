@@ -55,7 +55,15 @@ describe('Master Contract', function () {
 
   beforeEach(async function () {
     // Deploy Master Contract
-    const masterContractFactory = await ethers.getContractFactory('Master');
+    const MasterLibrary = await ethers.getContractFactory('MasterLibrary');
+    const mylabrary = await MasterLibrary.deploy();
+    await mylabrary.deployed();
+
+    const masterContractFactory = await ethers.getContractFactory('Master', {
+      libraries: {
+        MasterLibrary: mylabrary.address,
+      },
+    });
     const [owner, addr1, addr2] = await ethers.getSigners();
     masterContract = await masterContractFactory.deploy();
     // Deploy BUSD Contract
@@ -281,6 +289,8 @@ describe('Mint Master -> Child', function () {
     await busdContract
       .connect(addr1Signer)
       .approve(childContract.address, ethers.constants.MaxInt256);
+
+    console.log(await childContract.max_Supply());
 
     await masterContract
       .connect(addr1Signer)

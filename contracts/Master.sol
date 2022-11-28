@@ -4,12 +4,14 @@ pragma solidity >=0.6.0 <0.9.0;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./IMintingoCollection.sol";
 import "./Mintingocollection.sol";
+import "./MasterLibrary.sol";
+import "hardhat/console.sol";
+
 
 // Mintingo Master Contract
-contract Master is Ownable, ReentrancyGuard {   
+contract Master is Ownable {   
     using Strings for uint256;
 
     mapping(uint256 => address) public collections;
@@ -23,10 +25,14 @@ contract Master is Ownable, ReentrancyGuard {
     function  create_collection(
         string memory _name,
         string memory _symbol, uint256[] memory totalClaimable, uint[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _master) public onlyOwner() {
-        MintingoCollection collection = new MintingoCollection(_name, _symbol, totalClaimable, tiers, coins, amounts, coin_to_pay, nfts, price_to_pay, _master);
-        address collection_address = address(collection);
-        collections_ids.push(collection_address);
-        collections[collections_ids.length - 1] = collection_address;
+        
+      address newAddress =  MasterLibrary.lib_create_collection(_name, _symbol, totalClaimable, tiers, coins, amounts, coin_to_pay, nfts, price_to_pay, _master);  
+      
+        // MintingoCollection collection = new MintingoCollection(_name, _symbol, totalClaimable, tiers, coins, amounts, coin_to_pay, nfts, price_to_pay, _master);
+        // address collection_address = address(collection);
+
+        collections_ids.push(newAddress);
+        collections[collections_ids.length - 1] = newAddress;
     }
 
     function  reveal_by_id(
@@ -50,11 +56,11 @@ contract Master is Ownable, ReentrancyGuard {
     function  buy_ticket(uint256 collection_id, address coin, uint256 _mintAmount) public {
         /// TODO: if users lose X times in a row, then he has the right to get a free ticket.
         require(collections[collection_id] != address(0), 'COLLECTION_DNE');
+       
         address collection_address = collections[collection_id];
+ 
         IMintingoCollection(collection_address).mint(_mintAmount, coin, msg.sender);
     }
 
-    event CollectionCreated(address indexed addr, uint256 indexed id, uint256 supply);
-    event CollectionRevealed(address indexed addr, uint256 indexed id );
 
 }

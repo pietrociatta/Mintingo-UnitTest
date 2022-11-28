@@ -2,28 +2,28 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
-contract MintingoCollection is  ERC721Enumerable, Ownable, ReentrancyGuard {
+contract MintingoCollection is  ERC721Enumerable, ReentrancyGuard {
     using Strings for uint256;
     using SafeMath for uint256;
 
     string public baseURI;
     string public notRevealedUri;
-    string public baseExtension = ".json";
+    string private baseExtension = ".json";
+    address public owner;
 
     bool public paused = false;
     bool public revealed = false;
 
-    uint256 start_block;
+    uint256 private start_block;
     Ticket price_info;
    
-    uint256 public expiration;
+    uint256 private expiration;
     uint256 public max_Supply;
 
     mapping(uint256 => RewardInfo) public reward_by_token;
@@ -47,16 +47,28 @@ contract MintingoCollection is  ERC721Enumerable, Ownable, ReentrancyGuard {
     uint256 total_claimed;
     }   
 
+function _onlyMaster() private view {
+    require(msg.sender == master, "ONLY_MASTER");
+}
+
+function _onlyOwner() private view {
+    require(msg.sender == owner, "ONLY_OWNER");
+}
 
 // Modifier per Master Contract
     modifier onlyMaster() {
-        require(msg.sender == master, 'NOT_AUTHORIZED');
+        _onlyMaster();
+        _;
+    }
+
+    modifier onlyOwner() {
+        _onlyOwner();
         _;
     }
 
 // Constructor 
     constructor( string memory _name,
-        string memory _symbol, uint256[] memory totalClaimable, uint256[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _master) ERC721(_name, _symbol) Ownable() {
+        string memory _symbol, uint256[] memory totalClaimable, uint256[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _master) ERC721(_name, _symbol) {
         require(tiers.length == coins.length && coins.length == amounts.length && coins.length == totalClaimable.length, 'INVALID_DATA');
          for(uint256 i=0; i < tiers.length; i++){
             if (i == 0 ) {
@@ -68,6 +80,7 @@ contract MintingoCollection is  ERC721Enumerable, Ownable, ReentrancyGuard {
         price_info = Ticket(coin_to_pay, nfts, price_to_pay);
         master = _master;
         winners = new uint256[](0);
+        owner = msg.sender;
         
     }
 
@@ -195,11 +208,11 @@ contract MintingoCollection is  ERC721Enumerable, Ownable, ReentrancyGuard {
         }
     }
 
-    function setBaseURI(string memory _newBaseURI) public onlyOwner {
+    function setBaseURI(string memory _newBaseURI) internal virtual  {
         baseURI = _newBaseURI;
     }
 
-    function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
+    function setNotRevealedURI(string memory _notRevealedURI) internal virtual {
         notRevealedUri = _notRevealedURI;
     }
 
