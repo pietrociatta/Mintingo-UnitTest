@@ -1,9 +1,6 @@
 const { expect, should } = require('chai');
 const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
-const {
-  experimentalAddHardhatNetworkMessageTraceHook,
-} = require('hardhat/config');
 
 let masterContract;
 let interfaceContract;
@@ -15,7 +12,11 @@ let usdcContract;
 let ticketNftContract;
 let addr1Address;
 let addr1Signer;
-let addr2;
+let addr2Address;
+let addr2Signer;
+let simoneAddress;
+let addr4Signer;
+let addr4Address;
 
 let childContractAddress;
 let childContract;
@@ -27,17 +28,17 @@ let _totalClaimable = [300, 100, 200, 300, 400];
 let _tiers = [0, 1, 2, 3, 4];
 let _coins = [
   '0x0000000000000000000000000000000000000000',
-  '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
-  '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
-  '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
-  '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
 ];
 let _amounts = [0, 10, 10, 10, 10];
 let _coin_to_pay = [
-  '0x610178dA211FEF7D417bC0e6FeD39F05609AD788',
-  '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e',
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
 ];
-let _nfts = ['0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0'];
+let _nfts = ['0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9'];
 let _price_to_pay = [30, 40];
 let master;
 
@@ -64,7 +65,7 @@ describe('Master Contract', function () {
         MasterLibrary: mylabrary.address,
       },
     });
-    const [owner, addr1, addr2] = await ethers.getSigners();
+    const [owner, addr1, addr2, simone, addr4] = await ethers.getSigners();
     masterContract = await masterContractFactory.deploy();
     // Deploy BUSD Contract
     const BEP20TokenFactory = await ethers.getContractFactory('BUSD');
@@ -87,6 +88,11 @@ describe('Master Contract', function () {
     ownerAddress = owner.address;
     addr1Address = addr1.address;
     addr1Signer = addr1;
+    addr2Address = addr2.address;
+    addr2Signer = addr2;
+    simoneAddress = simone.address;
+    addr4Address = addr4.address;
+    addr4Signer = addr4;
 
     // ✅✅✅✅✅✅✅
     expect(await masterContract.owner()).to.equal(owner.address);
@@ -94,34 +100,33 @@ describe('Master Contract', function () {
     expect(await busdContract.owner()).to.equal(owner.address);
   });
 
-  it('Should deploy Mintingo main Contract', async function () {
-    const mainContractFactory = await ethers.getContractFactory(
-      'MintingoCollection'
-    );
-    mainContract = await mainContractFactory.deploy(
-      'Main Contract',
-      _symbol,
-      _totalClaimable,
-      _tiers,
-      _coins,
-      _amounts,
-      _coin_to_pay,
-      _nfts,
-      _price_to_pay,
-      master.toString()
-    );
-    await mainContract.deployed();
+  // it('Should deploy Mintingo main Contract', async function () {
+  //   const mainContractFactory = await ethers.getContractFactory(
+  //     'MintingoCollection'
+  //   );
+  //   mainContract = await mainContractFactory.deploy(
+  //     'Main Contract',
+  //     _symbol,
+  //     _totalClaimable,
+  //     _tiers,
+  //     _coins,
+  //     _amounts,
+  //     _coin_to_pay,
+  //     _nfts,
+  //     _price_to_pay
+  //   );
+  //   await mainContract.deployed();
 
-    // ✅✅✅✅✅✅✅
-    expect(await mainContract.master()).to.equal(master.toString());
-  });
+  //   // ✅✅✅✅✅✅✅
+  //   expect(await mainContract.master()).to.equal(master.toString());
+  // });
 
-  it('Should deploy Interface Contract', async function () {
-    interfaceContract = await ethers.getContractAt(
-      'IMintingoCollection',
-      mainContract.address
-    );
-  });
+  // it('Should deploy Interface Contract', async function () {
+  //   interfaceContract = await ethers.getContractAt(
+  //     'IMintingoCollection',
+  //     mainContract.address
+  //   );
+  // });
 
   it('Create a child collection', async function () {
     await masterContract.create_collection(
@@ -133,8 +138,7 @@ describe('Master Contract', function () {
       _amounts,
       _coin_to_pay,
       _nfts,
-      _price_to_pay,
-      master.toString()
+      _price_to_pay
     );
 
     await masterContract.create_collection(
@@ -146,15 +150,14 @@ describe('Master Contract', function () {
       _amounts,
       _coin_to_pay,
       _nfts,
-      _price_to_pay,
-      master.toString()
+      _price_to_pay
     );
 
     childContractAddress = await masterContract.collections(0);
     const secondChildContract = await masterContract.collections(1);
 
     console.log('Master contract: ', masterContract.address);
-    console.log('Mintingo contract: ', mainContract.address);
+
     console.log('Owner contract: ', ownerAddress);
     console.log('ChildContract contract: ', childContractAddress);
     console.log('BUSD contract: ', busdContract.address);
@@ -185,8 +188,7 @@ describe('Master Contract', function () {
         _amounts,
         _coin_to_pay,
         _nfts,
-        _price_to_pay,
-        master.toString()
+        _price_to_pay
       )
     ).to.be.revertedWith('INVALID_DATA');
   });
@@ -203,6 +205,20 @@ describe('BUSD Contract', function () {
 
     // ✅✅✅✅✅✅✅
     expect(await busdContract.balanceOf(addr1Address)).to.equal(1000);
+  });
+
+  it('Should Transfer 1000 BUSD to addr2', async function () {
+    await busdContract.transfer(addr2Address, 1000);
+
+    // ✅✅✅✅✅✅✅
+    expect(await busdContract.balanceOf(addr2Address)).to.equal(1000);
+  });
+
+  it('Should Transfer 1000 BUSD to addr4', async function () {
+    await busdContract.transfer(addr4Address, 1000);
+
+    // ✅✅✅✅✅✅✅
+    expect(await busdContract.balanceOf(addr4Address)).to.equal(1000);
   });
 });
 
@@ -229,8 +245,7 @@ describe('Main Contract', function () {
       'MintingoCollection',
       childContractAddress
     );
-    // ✅✅✅✅✅✅✅
-    expect(await childContract.master()).to.equal(master.toString());
+
     // ✅✅✅✅✅✅✅
     expect(await childContract.name()).to.equal(_name);
     // ✅✅✅✅✅✅✅
@@ -250,32 +265,47 @@ describe('Main Contract', function () {
       }
     }
   });
-  //   it('Should transfer 1000 BUSD and get BUSD Balance of the main contract', async function () {
-  //     await busdContract.transfer(mainContract.address, 1000);
-  //     // ✅✅✅✅✅✅;
-  //     expect(await busdContract.balanceOf(mainContract.address)).to.equal(1000);
-  //   });
-  //   it('Should transfer 1000 USDC and get USDC Balance of the main contract', async function () {
-  //     await usdcContract.transfer(mainContract.address, 2000);
-  //     // ✅✅✅✅✅✅✅
-  //     expect(await usdcContract.balanceOf(mainContract.address)).to.equal(2000);
-  //   });
-  //   it('Should set variables for the next tests', async function () {
-  //     await masterContract.set_variables(
-  //       0,
-  //       _start_block,
-  //       _expiration,
-  //       _supply,
-  //       _initNotRevealedUri
-  //     );
-  //   });
+  // it('Should transfer 1000 BUSD and get BUSD Balance of the main contract', async function () {
+  //   await busdContract.transfer(mainContract.address, 1000);
+  //   // ✅✅✅✅✅✅;
+  //   expect(await busdContract.balanceOf(mainContract.address)).to.equal(1000);
+  // });
+  // it('Should transfer 1000 USDC and get USDC Balance of the main contract', async function () {
+  //   await usdcContract.transfer(mainContract.address, 2000);
+  //   // ✅✅✅✅✅✅✅
+  //   expect(await usdcContract.balanceOf(mainContract.address)).to.equal(2000);
+  // });
+
+  it('Should set variables for the next tests', async function () {
+    await childContract.setVariables(
+      _start_block,
+      _expiration,
+      _supply,
+      _initNotRevealedUri
+    );
+  });
+});
+
+describe('Referral', function () {
+  it('Should set referral parameters', async function () {
+    console.log(await busdContract.balanceOf(childContract.address));
+    await childContract.set_referral(
+      1000,
+      100,
+      5645645645,
+      false,
+      [500, 300, 200],
+      [1, 1000]
+    );
+  });
 });
 
 describe('Mint Master -> Child', function () {
   it('Should mint 4 NFT to addr1 paying with BUSD: buy_ticket', async function () {
-    // const ticket = await childContract.getTicket();
-    // console.log(ticket[2][0]);
-
+    console.log(
+      'nft contract balance:',
+      await busdContract.balanceOf(childContractAddress)
+    );
     await ticketNftContract.connect(addr1Signer).mint(2);
     // approve the contract to spend BUSD
 
@@ -283,16 +313,18 @@ describe('Mint Master -> Child', function () {
       .connect(addr1Signer)
       .approve(childContract.address, ethers.constants.MaxInt256);
 
-    console.log(typeof busdContract.address);
-
     await masterContract
       .connect(addr1Signer)
-      .buy_ticket('0', busdContract.address, '4');
+      .buy_ticket('0', busdContract.address, '4', ownerAddress);
 
+    console.log(await busdContract.balanceOf(ownerAddress));
+    console.log(await busdContract.balanceOf(addr1Address));
+    console.log(await busdContract.balanceOf(addr2Address));
+    console.log(await busdContract.balanceOf(addr4Address));
     // ✅✅✅✅✅✅✅
     expect(await childContract.balanceOf(addr1Address)).to.equal(4);
     expect(await childContract.totalSupply()).to.equal(4);
-    expect(await busdContract.balanceOf(childContract.address)).to.equal(120);
+    expect(await busdContract.balanceOf(childContract.address)).to.equal(103);
     expect(await busdContract.balanceOf(addr1Address)).to.equal(880);
   });
 
@@ -303,41 +335,91 @@ describe('Mint Master -> Child', function () {
 
   //   await masterContract
   //     .connect(addr1Signer)
-  //     .buy_ticket(0, usdcContract.address, 2);
+  //     .buy_ticket(0, usdcContract.address, 2, ownerAddress);
 
   //   // ✅✅✅✅✅✅✅
   //   expect(await childContract.balanceOf(addr1Address)).to.equal(6);
   //   expect(await childContract.totalSupply()).to.equal(6);
-  //   expect(await usdcContract.balanceOf(childContract.address)).to.equal(80);
+  //   expect(await usdcContract.balanceOf(childContract.address)).to.equal(69);
   //   expect(await usdcContract.balanceOf(addr1Address)).to.equal(1920);
   // });
 
-  // it('Should reveal the NFTs: reveal', async function () {
-  //   await masterContract.reveal_by_id(
-  //     childContract.address,
-  //     [1, 2, 3, 4],
-  //     [1, 2, 3, 4],
-  //     'ciao'
-  //   );
+  it('Should mint 4 NFT to addr2 paying with BUSD: buy_ticket', async function () {
+    await ticketNftContract.connect(addr2Signer).mint(2);
+    // approve the contract to spend BUSD
 
-  //   const rewards = await childContract.reward_by_token(0);
-  //   const rewards1 = await childContract.reward_by_token(1);
-  //   const rewards2 = await childContract.reward_by_token(2);
-  //   const rewards3 = await childContract.reward_by_token(3);
+    await busdContract
+      .connect(addr2Signer)
+      .approve(childContract.address, ethers.constants.MaxInt256);
 
-  //   // ✅✅✅✅✅✅✅
-  //   expect(await childContract.revealed()).to.equal(true);
-  // });
+    await masterContract
+      .connect(addr2Signer)
+      .buy_ticket('0', busdContract.address, '4', addr1Address);
 
-  // it('Should claim the rewards: claim', async function () {
-  //   await childContract
-  //     .connect(addr1Signer)
-  //     .setApprovalForAll(childContract.address, true);
-  //   await childContract.connect(addr1Signer).claim(2);
+    console.log(await busdContract.balanceOf(ownerAddress));
+    console.log(await busdContract.balanceOf(addr1Address));
+    console.log(await busdContract.balanceOf(addr2Address));
+    console.log(await busdContract.balanceOf(addr4Address));
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.balanceOf(addr2Address)).to.equal(4);
+    expect(await childContract.totalSupply()).to.equal(8);
+    expect(await busdContract.balanceOf(childContract.address)).to.equal(203);
+    expect(await busdContract.balanceOf(addr2Address)).to.equal(880);
+  });
 
-  //   // ✅✅✅✅✅✅✅
-  //   expect(await childContract.balanceOf(addr1Address)).to.equal(5);
-  //   expect(await busdContract.balanceOf(addr1Address)).to.equal(890);
-  //   expect(await busdContract.balanceOf(childContract.address)).to.equal(110);
-  // });
+  it('Should mint 4 NFT to addr4 paying with BUSD: buy_ticket', async function () {
+    await ticketNftContract.connect(addr4Signer).mint(2);
+    // approve the contract to spend BUSD
+
+    await busdContract
+      .connect(addr4Signer)
+      .approve(childContract.address, ethers.constants.MaxInt256);
+
+    await masterContract
+      .connect(addr4Signer)
+      .buy_ticket('0', busdContract.address, '4', addr2Address);
+
+    console.log(await busdContract.balanceOf(ownerAddress));
+    console.log(await busdContract.balanceOf(addr1Address));
+    console.log(await busdContract.balanceOf(addr2Address));
+    console.log(await busdContract.balanceOf(addr4Address));
+    console.log(
+      'nft contract balance:',
+      await busdContract.balanceOf(childContractAddress)
+    );
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.balanceOf(addr2Address)).to.equal(4);
+    expect(await childContract.totalSupply()).to.equal(12);
+    expect(await busdContract.balanceOf(childContract.address)).to.equal(301);
+    expect(await busdContract.balanceOf(addr2Address)).to.equal(885);
+  });
+
+  it('Should reveal the NFTs: reveal', async function () {
+    await masterContract.reveal_by_id(
+      childContract.address,
+      [1, 2, 3, 4],
+      [1, 2, 3, 4],
+      'ciao'
+    );
+
+    const rewards = await childContract.reward_by_token(0);
+    const rewards1 = await childContract.reward_by_token(1);
+    const rewards2 = await childContract.reward_by_token(2);
+    const rewards3 = await childContract.reward_by_token(3);
+
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.revealed()).to.equal(true);
+  });
+
+  it('Should claim the rewards: claim', async function () {
+    await childContract
+      .connect(addr1Signer)
+      .setApprovalForAll(childContract.address, true);
+    await childContract.connect(addr1Signer).claim(2);
+
+    // ✅✅✅✅✅✅✅
+    expect(await childContract.balanceOf(addr1Address)).to.equal(3);
+    expect(await busdContract.balanceOf(addr1Address)).to.equal(898);
+    expect(await busdContract.balanceOf(childContract.address)).to.equal(291);
+  });
 });

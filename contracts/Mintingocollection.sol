@@ -5,17 +5,18 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Referral.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
-contract MintingoCollection is  ERC721Enumerable, ReentrancyGuard {
+contract MintingoCollection is Referral, ERC721Enumerable, ReentrancyGuard {
     using Strings for uint256;
     using SafeMath for uint256;
 
     string public baseURI;
     string public notRevealedUri;
     string private baseExtension = ".json";
-    address public owner;
+    address public creator;
 
     bool public paused = false;
     bool public revealed = false;
@@ -47,19 +48,13 @@ contract MintingoCollection is  ERC721Enumerable, ReentrancyGuard {
     uint256 total_claimed;
     }   
 
-function _onlyMaster() private view {
-    require(msg.sender == master, "ONLY_MASTER");
-}
 
 function _onlyOwner() private view {
-    require(msg.sender == owner, "ONLY_OWNER");
+    require(tx.origin == creator, "ONLY_OWNER");
 }
 
 // Modifier per Master Contract
-    modifier onlyMaster() {
-        _onlyMaster();
-        _;
-    }
+  
 
     modifier onlyOwner() {
         _onlyOwner();
@@ -68,7 +63,7 @@ function _onlyOwner() private view {
 
 // Constructor 
     constructor( string memory _name,
-        string memory _symbol, uint256[] memory totalClaimable, uint256[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _master) ERC721(_name, _symbol) {
+        string memory _symbol, uint256[] memory totalClaimable, uint256[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay , address _admin) ERC721(_name, _symbol) Referral() {
         require(tiers.length == coins.length && coins.length == amounts.length && coins.length == totalClaimable.length, 'INVALID_DATA');
          for(uint256 i=0; i < tiers.length; i++){
             if (i == 0 ) {
@@ -78,14 +73,13 @@ function _onlyOwner() private view {
             rewards.push(RewardInfo(coins[i], amounts[i], totalClaimable[i], 0));
         }
         price_info = Ticket(coin_to_pay, nfts, price_to_pay);
-        master = _master;
-        winners = new uint256[](0);
-        owner = msg.sender;
         
+        winners = new uint256[](0);
+        creator = _admin;  
     }
 
     function setVariables(uint256 _start_block, uint256 _expiration, uint256 _supply,
-        string memory _initNotRevealedUri) public onlyMaster {
+        string memory _initNotRevealedUri) public onlyOwner() {
         start_block = _start_block;
         expiration = _expiration;
         max_Supply = _supply;
@@ -94,6 +88,18 @@ function _onlyOwner() private view {
             coin_to_price[price_info.coin_to_pay[i]] = price_info.price_to_pay[i] ;
             }
     }
+
+    function set_referral(uint _decimals,
+    uint _referralBonus,
+    uint _secondsUntilInactive,
+    bool _onlyRewardActiveReferrers,
+    uint256[] memory _levelRate,
+    uint256[] memory _refereeBonusRateMap) public onlyOwner() {
+        set_Values(_decimals, _referralBonus, _secondsUntilInactive, _onlyRewardActiveReferrers, _levelRate, _refereeBonusRateMap);
+    }
+
+    
+    
 
 // Funzione per ottenere il balance della collezione
 //    function  get_balanceOf() public view returns( uint256[] memory){
@@ -130,12 +136,12 @@ function _onlyOwner() private view {
         reward.total_claimed += 1;
         reward_by_token[token_id] = reward;
         IERC20(reward.coin).transfer(msg.sender, reward.amount);
-        IERC721(this).transferFrom(msg.sender, master, token_id);
+        IERC721(this).transferFrom(msg.sender, address(this), token_id);
         
     }
 
 // Funzione per fare il reveal dei premi
-    function  reveal(uint256[] memory _winners, uint256[] memory tiers, string memory revealed_uri) public onlyMaster() {
+    function  reveal(uint256[] memory _winners, uint256[] memory tiers, string memory revealed_uri) public onlyOwner() {
         require(_winners.length == tiers.length, 'INVALID_DATA_FORMAT');
          winners = _winners;
         // update winners and rewards claimable
@@ -176,7 +182,7 @@ function _onlyOwner() private view {
       
     }
 
-    function mint(uint256 _mintAmount, address coin, address user) public payable onlyMaster() {
+    function mint(uint256 _mintAmount, address coin, address user, address _referrer) public payable {
         require(!paused, "CONTRACT_PAUSED"); 
         require(_mintAmount > 0, "INVALID_MINT_AMOUNT");
         uint256 price = (coin_to_price[coin]).mul(_mintAmount);
@@ -201,9 +207,16 @@ function _onlyOwner() private view {
             );
             require(
                 IERC20(coin).allowance(user, address(this)) >= price, 'NOT_AUTHORIZED');
-            require(
-              IERC20(coin).transferFrom(user, address(this), price), 
-                'TRANSFER_FAILED');
+                  if(!hasReferrer(user)) {
+                    console.log('no referrer');
+                 addReferrer(payable(_referrer), user);
+            }
+            payReferral(coin, price, user);
+            // require(
+            //   IERC20(coin).transferFrom(user, address(this), price), 
+            //     'TRANSFER_FAILED');
+
+          
             _mintTicket(user, _mintAmount);
         }
     }
@@ -217,7 +230,7 @@ function _onlyOwner() private view {
     }
 
 // funzione withdraw per il master
-    function withdraw(address coin, uint256 amount) public onlyMaster()  {
+    function withdraw(address coin, uint256 amount) public onlyOwner()  {
         require(coin != address(0), 'INVALID_COIN');
         require(amount > 0, 'INVALID_AMOUNT');
         require(IERC20(coin).balanceOf(address(this)) >= amount, 'INSUFFICENT_BALANCE');
