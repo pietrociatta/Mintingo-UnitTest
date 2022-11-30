@@ -47,7 +47,7 @@ let master;
 let _start_block = 100;
 let _expiration = 30;
 let _supply = 1000;
-let _initNotRevealedUri = '';
+let _initNotRevealedUri = 'porco';
 
 // ---- TESTS ---- //
 
@@ -100,34 +100,6 @@ describe('Master Contract', function () {
     expect(await busdContract.owner()).to.equal(owner.address);
   });
 
-  // it('Should deploy Mintingo main Contract', async function () {
-  //   const mainContractFactory = await ethers.getContractFactory(
-  //     'MintingoCollection'
-  //   );
-  //   mainContract = await mainContractFactory.deploy(
-  //     'Main Contract',
-  //     _symbol,
-  //     _totalClaimable,
-  //     _tiers,
-  //     _coins,
-  //     _amounts,
-  //     _coin_to_pay,
-  //     _nfts,
-  //     _price_to_pay
-  //   );
-  //   await mainContract.deployed();
-
-  //   // ✅✅✅✅✅✅✅
-  //   expect(await mainContract.master()).to.equal(master.toString());
-  // });
-
-  // it('Should deploy Interface Contract', async function () {
-  //   interfaceContract = await ethers.getContractAt(
-  //     'IMintingoCollection',
-  //     mainContract.address
-  //   );
-  // });
-
   it('Create a child collection', async function () {
     await masterContract.create_collection(
       _name,
@@ -157,7 +129,6 @@ describe('Master Contract', function () {
     const secondChildContract = await masterContract.collections(1);
 
     console.log('Master contract: ', masterContract.address);
-
     console.log('Owner contract: ', ownerAddress);
     console.log('ChildContract contract: ', childContractAddress);
     console.log('BUSD contract: ', busdContract.address);
@@ -265,24 +236,17 @@ describe('Main Contract', function () {
       }
     }
   });
-  // it('Should transfer 1000 BUSD and get BUSD Balance of the main contract', async function () {
-  //   await busdContract.transfer(mainContract.address, 1000);
-  //   // ✅✅✅✅✅✅;
-  //   expect(await busdContract.balanceOf(mainContract.address)).to.equal(1000);
-  // });
-  // it('Should transfer 1000 USDC and get USDC Balance of the main contract', async function () {
-  //   await usdcContract.transfer(mainContract.address, 2000);
-  //   // ✅✅✅✅✅✅✅
-  //   expect(await usdcContract.balanceOf(mainContract.address)).to.equal(2000);
-  // });
 
   it('Should set variables for the next tests', async function () {
-    await childContract.setVariables(
-      _start_block,
-      _expiration,
-      _supply,
-      _initNotRevealedUri
-    );
+    await masterContract
+      .connect(ownerSigner)
+      .set_variables(
+        0,
+        _start_block,
+        _expiration,
+        _supply,
+        _initNotRevealedUri
+      );
   });
 });
 
@@ -395,18 +359,19 @@ describe('Mint Master -> Child', function () {
   });
 
   it('Should reveal the NFTs: reveal', async function () {
+    console.log(await childContract.tokenURI(1));
     await masterContract.reveal_by_id(
       childContract.address,
       [1, 2, 3, 4],
       [1, 2, 3, 4],
-      'ciao'
+      'dio'
     );
 
-    const rewards = await childContract.reward_by_token(0);
-    const rewards1 = await childContract.reward_by_token(1);
-    const rewards2 = await childContract.reward_by_token(2);
-    const rewards3 = await childContract.reward_by_token(3);
-
+    // const rewards = await childContract.reward_by_token(0);
+    // const rewards1 = await childContract.reward_by_token(1);
+    // const rewards2 = await childContract.reward_by_token(2);
+    // const rewards3 = await childContract.reward_by_token(3);
+    console.log(await childContract.tokenURI(1));
     // ✅✅✅✅✅✅✅
     expect(await childContract.revealed()).to.equal(true);
   });

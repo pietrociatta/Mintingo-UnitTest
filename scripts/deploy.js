@@ -53,16 +53,16 @@ Ticket NFT Contract deployed to: 0x869cC415833C9E8DbAc4Ea621B9E00eC5b3Fb661
 async function main() {
   // ---- Before Each ---- //
 
-  // // DEPLOY CHE LIBRARY MASTER CONTRACT
-  // const MasterContractLibrary = await ethers.getContractFactory(
-  //   'MasterLibrary'
-  // );
-  // const masterContractLibrary = await MasterContractLibrary.deploy();
-  // await masterContractLibrary.deployed();
-  // console.log(
-  //   'Master Contract Library deployed to:',
-  //   masterContractLibrary.address
-  // );
+  // DEPLOY CHE LIBRARY MASTER CONTRACT
+  const MasterContractLibrary = await ethers.getContractFactory(
+    'MasterLibrary'
+  );
+  const masterContractLibrary = await MasterContractLibrary.deploy();
+  await masterContractLibrary.deployed();
+  console.log(
+    'Master Contract Library deployed to:',
+    masterContractLibrary.address
+  );
 
   // // DEPLOY MASTER CONTRACT
   // const MasterContract = await ethers.getContractFactory('Master', {

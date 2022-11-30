@@ -102,18 +102,18 @@ function _onlyOwner() private view {
     
 
 // Funzione per ottenere il balance della collezione
-//    function  get_balanceOf() public view returns( uint256[] memory){
-//         uint256[] memory amounts = new uint256[](price_info.coin_to_pay.length);
-//         for(uint i=0; i < price_info.coin_to_pay.length; i++){
-//             amounts[i] = (IERC20(price_info.coin_to_pay[i]).balanceOf(address(this)));
-//         }
-//         return amounts;
-//     }
+   function  get_balanceOf() public view returns( uint256[] memory){
+        uint256[] memory amounts = new uint256[](price_info.coin_to_pay.length);
+        for(uint i=0; i < price_info.coin_to_pay.length; i++){
+            amounts[i] = (IERC20(price_info.coin_to_pay[i]).balanceOf(address(this)));
+        }
+        return amounts;
+    }
 
 // Funzione get ticket 
-    // function getTicket() public view returns (address[] memory, address[] memory, uint256[] memory)  {
-    //     return (price_info.coin_to_pay, price_info.nfts, price_info.price_to_pay);
-    // }    
+    function getTicket() public view returns (address[] memory, address[] memory, uint256[] memory)  {
+        return (price_info.coin_to_pay, price_info.nfts, price_info.price_to_pay);
+    }    
  
 // Funzione per sapere se utente può claimare premio
     function  claim(uint256 token_id) public {
@@ -182,7 +182,7 @@ function _onlyOwner() private view {
       
     }
 
-    function mint(uint256 _mintAmount, address coin, address user, address _referrer) public payable {
+    function mint(uint256 _mintAmount, address coin, address user, address _referrer) public payable nonReentrant() {
         require(!paused, "CONTRACT_PAUSED"); 
         require(_mintAmount > 0, "INVALID_MINT_AMOUNT");
         uint256 price = (coin_to_price[coin]).mul(_mintAmount);

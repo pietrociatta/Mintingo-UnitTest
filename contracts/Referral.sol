@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+
 contract Referral  {
   using SafeMath for uint;
 
