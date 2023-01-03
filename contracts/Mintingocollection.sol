@@ -49,15 +49,17 @@ contract MintingoCollection is Referral, ERC721Enumerable, ReentrancyGuard {
     }   
 
 
-function _onlyOwner() private view {
-    require(tx.origin == creator, "ONLY_OWNER");
+// function _onlyOwner() private view {
+//     require(tx.origin == creator, "ONLY_OWNER");
+// }
+function _onlyMaster() private view {
+    require(msg.sender == master, "ONLY_MASTER");
 }
 
 // Modifier per Master Contract
-  
 
-    modifier onlyOwner() {
-        _onlyOwner();
+    modifier onlyMaster() {
+        _onlyMaster();
         _;
     }
 
@@ -75,11 +77,11 @@ function _onlyOwner() private view {
         price_info = Ticket(coin_to_pay, nfts, price_to_pay);
         
         winners = new uint256[](0);
-        creator = _admin;  
+        master = _admin;  
     }
 
     function setVariables(uint256 _start_block, uint256 _expiration, uint256 _supply,
-        string memory _initNotRevealedUri) public onlyOwner() {
+        string memory _initNotRevealedUri) public onlyMaster() {
         start_block = _start_block;
         expiration = _expiration;
         max_Supply = _supply;
@@ -89,12 +91,12 @@ function _onlyOwner() private view {
             }
     }
 
-    function set_referral(uint _decimals,
-    uint _referralBonus,
-    uint _secondsUntilInactive,
+    function set_referral(uint256 _decimals,
+    uint256 _referralBonus,
+    uint256 _secondsUntilInactive,
     bool _onlyRewardActiveReferrers,
     uint256[] memory _levelRate,
-    uint256[] memory _refereeBonusRateMap) public onlyOwner() {
+    uint256[] memory _refereeBonusRateMap) public onlyMaster() {
         set_Values(_decimals, _referralBonus, _secondsUntilInactive, _onlyRewardActiveReferrers, _levelRate, _refereeBonusRateMap);
     }
 
@@ -141,7 +143,7 @@ function _onlyOwner() private view {
     }
 
 // Funzione per fare il reveal dei premi
-    function  reveal(uint256[] memory _winners, uint256[] memory tiers, string memory revealed_uri) public onlyOwner() {
+    function  reveal(uint256[] memory _winners, uint256[] memory tiers, string memory revealed_uri) public onlyMaster() {
         require(_winners.length == tiers.length, 'INVALID_DATA_FORMAT');
          winners = _winners;
         // update winners and rewards claimable
@@ -207,9 +209,15 @@ function _onlyOwner() private view {
             );
             require(
                 IERC20(coin).allowance(user, address(this)) >= price, 'NOT_AUTHORIZED');
-                  if(!hasReferrer(user)) {
-                    console.log('no referrer');
-                 addReferrer(payable(_referrer), user);
+                 if(!hasReferrer(user)) {
+                
+                if(_referrer != address(0)){
+                    // if _referrer is a valid address set it as user referrer
+                    addReferrer(payable(_referrer), user);
+                }else{
+                    // Set the creator as user referrer otherwise
+                    addReferrer(payable(creator), user);
+                }
             }
             payReferral(coin, price, user);
             // require(
@@ -230,7 +238,7 @@ function _onlyOwner() private view {
     }
 
 // funzione withdraw per il master
-    function withdraw(address coin, uint256 amount) public onlyOwner()  {
+    function withdraw(address coin, uint256 amount) public onlyMaster()  {
         require(coin != address(0), 'INVALID_COIN');
         require(amount > 0, 'INVALID_AMOUNT');
         require(IERC20(coin).balanceOf(address(this)) >= amount, 'INSUFFICENT_BALANCE');

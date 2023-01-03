@@ -11,4 +11,11 @@ function mint(uint256 _mintAmount, address coin, address user, address payable _
 function setVariables(uint256 _start_block, uint256 _expiration, uint256 _supply,
         string memory _initNotRevealedUri) external;
 
+function set_referral(uint _decimals,
+    uint _referralBonus,
+    uint _secondsUntilInactive,
+    bool _onlyRewardActiveReferrers,
+    uint256[] memory _levelRate,
+    uint256[] memory _refereeBonusRateMap) external;
+
 }

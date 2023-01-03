@@ -253,14 +253,17 @@ describe('Main Contract', function () {
 describe('Referral', function () {
   it('Should set referral parameters', async function () {
     console.log(await busdContract.balanceOf(childContract.address));
-    await childContract.set_referral(
-      1000,
-      100,
-      5645645645,
-      false,
-      [500, 300, 200],
-      [1, 1000]
-    );
+    await masterContract
+      .connect(ownerSigner)
+      .set_referral(
+        0,
+        1000,
+        100,
+        5645645645,
+        false,
+        [500, 300, 200],
+        [1, 1000]
+      );
   });
 });
 

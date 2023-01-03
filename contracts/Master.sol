@@ -26,7 +26,7 @@ contract Master is Context, Ownable {
     function  create_collection(
         string memory _name,
         string memory _symbol, uint256[] memory totalClaimable, uint[] memory tiers, address[] memory coins, uint256[] memory amounts, address[] memory coin_to_pay, address[] memory nfts, uint256[] memory price_to_pay) public onlyOwner() {
-      address owner = owner();
+      address owner = address(this);
       address newAddress =  MasterLibrary.lib_create_collection(_name, _symbol, totalClaimable, tiers, coins, amounts, coin_to_pay, nfts, price_to_pay, owner);  
       
         // MintingoCollection collection = new MintingoCollection(_name, _symbol, totalClaimable, tiers, coins, amounts, coin_to_pay, nfts, price_to_pay, _master);
@@ -50,6 +50,13 @@ contract Master is Context, Ownable {
      require(collections[collection_id] != address(0), 'COLLECTION_DNE');
     address collection_address = collections[collection_id];
     IMintingoCollection(collection_address).setVariables(_start_block, _expiration, _max_Supply, _initNotRevealedUri);
+       
+    }
+
+        function set_referral(uint256 collection_id, uint256 _decimals,uint256 _referralBonus,uint256 _secondsUntilInactive, bool _onlyRewardActiveReferrers,uint256[] memory _levelRate,uint256[] memory _refereeBonusRateMap) public onlyOwner(){
+     require(collections[collection_id] != address(0), 'COLLECTION_DNE');
+    address collection_address = collections[collection_id];
+    IMintingoCollection(collection_address).set_referral(_decimals, _referralBonus, _secondsUntilInactive, _onlyRewardActiveReferrers, _levelRate, _refereeBonusRateMap);
        
     }
 
